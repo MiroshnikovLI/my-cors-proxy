@@ -8,28 +8,14 @@ const port = process.env.PORT;
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok', 
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    service: 'cors-proxy'
   });
 });
 
-// CORS preflight
-app.options('*', (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.sendStatus(200);
-});
-
-// CORS заголовки для всех ответов
-app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  next();
-});
-
-// Прокси без проверки ключа
+// Прокси с отключенным требованием заголовков
 const proxy = cors_proxy.createServer({
-  originWhitelist: [], // Разрешаем всем
-  requireHeader: [],
+  requireHeader: [], // ← ВАЖНО: отключаем требование заголовков
   removeHeaders: ['cookie', 'cookie2']
 });
 
@@ -47,13 +33,29 @@ app.use('/', (req, res) => {
   }
 });
 
+// CORS заголовки для всех ответов
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', '*');
+  next();
+});
+
+// CORS preflight
+app.options('*', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', '*');
+  res.sendStatus(200);
+});
+
 // Запуск
 app.listen(port, '0.0.0.0', () => {
   console.log('='.repeat(50));
+  console.log(`🚀 CORS Proxy Server`);
   console.log(`📍 Port: ${port}`);
   console.log('='.repeat(50));
-  console.log('📌 Usage:');
-  console.log(`  GET  http://localhost:${port}/https://api.example.com/data`);
-  console.log(`  POST http://localhost:${port}/https://api.example.com/endpoint`);
+  console.log('✅ No API key required');
+  console.log('✅ No Origin header required');
   console.log('='.repeat(50));
 });
